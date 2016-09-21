@@ -1,25 +1,40 @@
+var path = require('path');
+
 var express = require('express');
 var cookieParser = require('cookie-parser')
+var exphbs = require('express-handlebars');
 
 var app = express();
 
 app.use(cookieParser());
 
+var viewsPath = path.join(__dirname, '/views');
+var layoutsDir = path.resolve(path.join(viewsPath, 'layouts'));
+var partialsDir = path.resolve(path.join(viewsPath, 'partials'));
+
+app.engine('handlebars', exphbs({
+  layoutsDir: layoutsDir,
+  partialsDir: partialsDir,
+  defaultLayout: 'main'
+}));
+
+app.set('views', path.resolve(viewsPath));
+app.set('view engine', 'handlebars');
+
+app.use('/public', express['static'](path.join(__dirname, '/public')));
+
 app.get('/', function (req, res) {
-  var msg = 'social network server';
-  msg += '<br>';
- 
   if (req.query.deleted) {
     if (req.query.deleted === 'authError') {
-      msg += 'Can not remove your account without being authenticated';
+      res.locals.message = 'Can not remove your account without being authenticated';
     } else {
-      msg += 'Account deleted succesfully';
+      res.locals.message = 'Account deleted succesfully';
     }
   } else if (req.query.auth) {
-    msg += 'Authenticated succesfully';
+    res.locals.message = 'Authenticated succesfully';
   }
 
-  res.send(msg);
+  res.render('home');
 });
 
 app.get('/auth', function (req, res) {
@@ -33,13 +48,7 @@ app.get('/delete-account', function (req, res) {
     return res.redirect('/?deleted=authError')
   }
 
-  var form = '';
-  form += '<h1>Delete your account?</h1>';
-  form += '<form action="/delete-account" method="post">'
-  form += '  <input type="submit" value="Delete!">'
-  form += '</form>'
-
-  res.send(form);
+  res.render('delete');
 });
 
 app.post('/delete-account', function (req, res) {
